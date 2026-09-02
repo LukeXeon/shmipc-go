@@ -128,7 +128,11 @@ func VerifyConfig(config *Config) error {
 		return errors.New("buffer path or queue path could not be nil")
 	}
 
-	if runtime.GOOS != "linux" {
+	// [rosetta patch 0001] allow android: epoll/memfd 是内核层设施,
+	// runtime.GOOS == "android" 下行为与 linux 一致;原保守门把
+	// Android 设备上的 VerifyConfig(server 启动路径)恒拒(rosetta
+	// L2 实测)。
+	if runtime.GOOS != "linux" && runtime.GOOS != "android" {
 		return ErrOSNonSupported
 	}
 

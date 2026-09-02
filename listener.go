@@ -77,7 +77,8 @@ func NewListener(callback ListenCallback, config *ListenerConfig) (*Listener, er
 		return nil, errors.New("ListenCallback couldn't be nil")
 	}
 
-	if runtime.GOOS != "linux" {
+	// [rosetta patch 0001] allow android(同 config.go;kernel 同源)
+	if runtime.GOOS != "linux" && runtime.GOOS != "android" {
 		return nil, fmt.Errorf("only support linux OS")
 	}
 
