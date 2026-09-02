@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 )
 
@@ -166,19 +165,6 @@ func newSession(config *Config, conn net.Conn, isClient bool) (*Session, error) 
 		return nil, err
 	}
 
-	// [rosetta patch 0002] the event dispatcher is an edge-triggered
-	// epoll loop whose read path drains until EAGAIN
-	// (connEventHandler.onReadReady); net.Conn.File() however dups the
-	// fd in BLOCKING mode, so the drain blocks forever on the second
-	// read — events stop being processed and the send-queue
-	// working flag is never cleared, deadlocking client and server
-	// (mark_working suppresses further wake events; rosetta L2 实测).
-	// Protocol init above reads the same fd directly with blocking
-	// primitives, so flip to non-blocking only AFTER initProtocol has
-	// completed and before the dispatcher takes ownership.
-	if err := syscall.SetNonblock(int(fd.Fd()), true); err != nil {
-		return nil, fmt.Errorf("set event conn non-blocking failed, error=%w", err)
-	}
 	s.eventConn = s.dispatcher.newConnection(fd)
 	if err := s.eventConn.setCallback(s); err != nil {
 		return nil, err
